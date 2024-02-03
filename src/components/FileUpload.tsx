@@ -8,7 +8,8 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
 const FileUpload = () => {
-  const { mutate } = useMutation({
+  const [uploading, setUploading] = React.useState(false);
+  const { mutate, isLoading } = useMutation({
     mutationFn: async ({
       file_key,
       file_name,
@@ -31,6 +32,7 @@ const FileUpload = () => {
         return;
       }
       try {
+        setUploading(true);
         const body = new FormData();
         body.append("file", file);
         const response = await axios.post("/api/upload", body, {
@@ -38,18 +40,15 @@ const FileUpload = () => {
             "Content-Type": "multipart/form-data",
           },
         });
-        console.log(response);
-        const file_name = response.data[0].file_name;
-        const file_key = response.data[0].file_key;
 
-        console.log(file_name, file_key);
-        // if (!data.data.file_key || !data.data.file_name) {
-        //   alert("Error uploading file");
-        //   return;
-        // }
+        console.log(response.data.file_key);
+        if (!response.data.file_key || !response.data.file_name) {
+          alert("Error uploading file");
+          return;
+        }
 
         mutate(response.data, {
-          onSuccess: () => {
+          onSuccess: (data) => {
             toast.success("File uploaded successfully");
           },
           onError: () => {
@@ -58,6 +57,8 @@ const FileUpload = () => {
         });
       } catch (error) {
         console.log(error);
+      } finally {
+        setUploading(false);
       }
     },
   });
@@ -70,11 +71,20 @@ const FileUpload = () => {
         })}
       >
         <input {...getInputProps()} />
-
-        <>
-          <Inbox className="w-10 h-10 text-blue-500" />
-          <p className="mt-2 text-sm text-slate-400">Drop PDF Here</p>
-        </>
+        {uploading || isLoading ? (
+          <>
+            {/* loading state */}
+            <Loader2 className="h-10 w-10 text-blue-500 animate-spin" />
+            <p className="mt-2 text-sm text-slate-400">
+              Teaching the robots to read...
+            </p>
+          </>
+        ) : (
+          <>
+            <Inbox className="w-10 h-10 text-blue-500" />
+            <p className="mt-2 text-sm text-slate-400">Drop PDF Here</p>
+          </>
+        )}
       </div>
     </div>
   );
